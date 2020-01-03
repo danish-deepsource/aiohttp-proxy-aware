@@ -48,17 +48,17 @@ class ClientSession(aiohttp.ClientSession):
         except ClientHttpProxyError as e:
             # traceback.print_exc()
             if e.status == 407 and os.name == 'nt':
-                if proxy in self.proxy_auth:
+                if proxy in self.proxy_auths:
                     # already tried.. try the request again in case another thread obtained auth while this request was
                     # processing
                     pass
                 else:
                     async with self.proxy_auth_lock:
                         # after locking, check that another thread didn't do it
-                        if proxy not in self.proxy_auth:
+                        if proxy not in self.proxy_auths:
                             logger.info("Proxy 407 error occurred - starting proxy NTLM auth negotiation")
                             import aiohttp_proxy_aware.sspi_auth
-                            self.proxy_auth[proxy] = await aiohttp_proxy_aware.sspi_auth.get_proxy_auth_header_sspi(
+                            self.proxy_auths[proxy] = await aiohttp_proxy_aware.sspi_auth.get_proxy_auth_header_sspi(
                                 self, proxy)
 
                 # try again
