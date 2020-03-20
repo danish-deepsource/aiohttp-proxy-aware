@@ -11,8 +11,6 @@ like Chrome, IE, etc
 ```
 pip install git+https://github.com/moodysanalytics/CS-Structured-AIOHTTP-Proxy-Aware.git
 ```
-If you get errors with the above command, please refer to the steps in 
-https://github.com/moodysanalytics/CS-Structured-PyBA to get Python, Pip and git working.
 
 ## Usage 
 
