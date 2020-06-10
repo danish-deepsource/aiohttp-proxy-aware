@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='aiohttp-proxy-aware',
-    version='0.1.1',
+    version='0.1.2',
     packages=['aiohttp_proxy_aware', ],
     long_description="Wrapper for aiohttp that automatically deals with proxies, including SSPI/NTLM authentication on "
                      "Windows",
