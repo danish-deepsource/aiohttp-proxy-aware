@@ -23,13 +23,14 @@ logger = logging.getLogger(__name__)
 warnings.filterwarnings(action='ignore', category=DeprecationWarning,
                         message="Inheritance class ClientSession from ClientSession is discouraged")
 
+
 class ClientSession(aiohttp.ClientSession):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.pac = pypac.get_pac()
         self.resolver = pypac.resolver.ProxyResolver(self.pac) if self.pac else None
-        logger.info(f'pypac proxy detection result: {self.resolver}')
+        logger.debug(f'pypac proxy detection result: {self.resolver}')
 
         self.proxy_auths = {}
         self.proxy_auth_lock = asyncio.Lock()
@@ -38,7 +39,7 @@ class ClientSession(aiohttp.ClientSession):
         if self.resolver:
             proxies = self.resolver.get_proxy_for_requests(url)
             proxy = proxies.get('http') if url.startswith('http:') else proxies.get('https')
-            logger.info(f'proxy for {url}: {proxy}')
+            logger.debug(f'proxy for {url}: {proxy}')
             kwargs['proxy'] = proxy
             if proxy in self.proxy_auths:
                 kwargs['proxy_headers'] = self.proxy_auths[proxy]
@@ -56,7 +57,7 @@ class ClientSession(aiohttp.ClientSession):
                     async with self.proxy_auth_lock:
                         # after locking, check that another thread didn't do it
                         if proxy not in self.proxy_auths:
-                            logger.info("Proxy 407 error occurred - starting proxy NTLM auth negotiation")
+                            logger.debug("Proxy 407 error occurred - starting proxy NTLM auth negotiation")
                             import aiohttp_proxy_aware.sspi_auth
                             self.proxy_auths[proxy] = await aiohttp_proxy_aware.sspi_auth.get_proxy_auth_header_sspi(
                                 self, proxy)
