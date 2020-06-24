@@ -9,7 +9,7 @@ like Chrome, IE, etc
 ## Installation
 
 ```
-pip install git+https://github.com/moodysanalytics/CS-Structured-AIOHTTP-Proxy-Aware.git
+pip install git+https://github.com/moodysanalytics/aiohttp-proxy-aware.git
 ```
 
 ## Usage 
