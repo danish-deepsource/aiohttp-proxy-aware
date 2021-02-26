@@ -10,7 +10,7 @@ setup(
     # package_data={'WSAAPy': ['library/*']}
     install_requires=[
         # see notes in __init__ about the inheritance being discouraged issue
-        'aiohttp==3.6.2',
+        'aiohttp==3.7.4',
         'pypac'
     ]
 )
