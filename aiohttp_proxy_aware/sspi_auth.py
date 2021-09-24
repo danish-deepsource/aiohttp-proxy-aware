@@ -21,7 +21,11 @@ except ImportError:
 _logger = logging.getLogger(__name__)
 
 
-async def get_proxy_auth_header_sspi(session, proxy_url, peercert=None, delegate=False, host=None):
+async def get_proxy_auth_header_sspi(session,
+                                     proxy_url,
+                                     peercert=None,
+                                     delegate=False,
+                                     host=None):
     """Performs a GET request against the proxy server to start and complete an NTLM authentication process
     
     Invoke this after getting a 407 error.  Returns the proxy_headers to use going forwards (in dict format)
@@ -38,15 +42,19 @@ async def get_proxy_auth_header_sspi(session, proxy_url, peercert=None, delegate
         targeturl = urlparse(proxy_url)
         host = targeturl.hostname
         try:
-            host = socket.getaddrinfo(host, None, 0, 0, 0, socket.AI_CANONNAME)[0][3]
+            host = socket.getaddrinfo(host, None, 0, 0, 0,
+                                      socket.AI_CANONNAME)[0][3]
         except socket.gaierror as e:
-            _logger.error('Skipping canonicalization of name %s due to error: %s', host, e)
+            _logger.error(
+                'Skipping canonicalization of name %s due to error: %s', host,
+                e)
 
     targetspn = '{}/{}'.format("HTTP", host)
 
     # Set up SSPI connection structure
     pkg_info = win32security.QuerySecurityPackageInfo(scheme)
-    clientauth = sspi.ClientAuth(scheme, targetspn=targetspn)  # , auth_info=self._auth_info)
+    clientauth = sspi.ClientAuth(
+        scheme, targetspn=targetspn)  # , auth_info=self._auth_info)
     sec_buffer = win32security.PySecBufferDescType()
 
     # Calling sspi.ClientAuth with scflags set requires you to specify all the flags, including defaults.
@@ -62,8 +70,10 @@ async def get_proxy_auth_header_sspi(session, proxy_url, peercert=None, delegate
         md = hashlib.sha256()
         md.update(peercert)
         appdata = 'tls-server-end-point:'.encode('ASCII') + md.digest()
-        cbtbuf = win32security.PySecBufferType(pkg_info['MaxToken'], sspicon.SECBUFFER_CHANNEL_BINDINGS)
-        cbtbuf.Buffer = struct.pack('LLLLLLLL{}s'.format(len(appdata)), 0, 0, 0, 0, 0, 0, len(appdata), 32, appdata)
+        cbtbuf = win32security.PySecBufferType(
+            pkg_info['MaxToken'], sspicon.SECBUFFER_CHANNEL_BINDINGS)
+        cbtbuf.Buffer = struct.pack('LLLLLLLL{}s'.format(len(appdata)), 0, 0,
+                                    0, 0, 0, 0, len(appdata), 32, appdata)
         sec_buffer.append(cbtbuf)
 
     # content_length = int(response.request.headers.get('Content-Length', '0'), base=10)
@@ -88,7 +98,10 @@ async def get_proxy_auth_header_sspi(session, proxy_url, peercert=None, delegate
     # Send initial challenge auth header
     try:
         error, auth = clientauth.authorize(sec_buffer)
-        headers = {'Proxy-Authorization': f'{scheme} {base64.b64encode(auth[0].Buffer).decode("ASCII")}'}
+        headers = {
+            'Proxy-Authorization':
+            f'{scheme} {base64.b64encode(auth[0].Buffer).decode("ASCII")}'
+        }
         response2 = await session.get(proxy_url, headers=headers)
 
         _logger.debug('Got response: ' + str(response2))
@@ -104,21 +117,30 @@ async def get_proxy_auth_header_sspi(session, proxy_url, peercert=None, delegate
         raise Exception(f'Expected 407, got {response2.status} status code')
 
     # Extract challenge message from server
-    challenge = [val[len(scheme) + 1:] for val in response2.headers.get('proxy-Authenticate', '').split(', ') if
-                 scheme in val]
+    challenge = [
+        val[len(scheme) + 1:]
+        for val in response2.headers.get('proxy-Authenticate', '').split(', ')
+        if scheme in val
+    ]
     if len(challenge) != 1:
-        raise Exception('Did not get exactly one {} challenge from server.'.format(scheme))
+        raise Exception(
+            'Did not get exactly one {} challenge from server.'.format(scheme))
 
     # Add challenge to security buffer
-    tokenbuf = win32security.PySecBufferType(pkg_info['MaxToken'], sspicon.SECBUFFER_TOKEN)
+    tokenbuf = win32security.PySecBufferType(pkg_info['MaxToken'],
+                                             sspicon.SECBUFFER_TOKEN)
     tokenbuf.Buffer = base64.b64decode(challenge[0])
     sec_buffer.append(tokenbuf)
     _logger.debug('Got Challenge Token (NTLM)')
 
-    # Perform next authorization step 
+    # Perform next authorization step
     try:
         error, auth = clientauth.authorize(sec_buffer)
-        headers = {'proxy-Authorization': '{} {}'.format(scheme, base64.b64encode(auth[0].Buffer).decode('ASCII'))}
+        headers = {
+            'proxy-Authorization':
+            '{} {}'.format(scheme,
+                           base64.b64encode(auth[0].Buffer).decode('ASCII'))
+        }
         _logger.debug(str(headers))
     except pywintypes.error as e:
         _logger.error('Error calling {}: {}'.format(e[1], e[2]), exc_info=e)
