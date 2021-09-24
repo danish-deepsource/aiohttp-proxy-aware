@@ -20,8 +20,11 @@ logger = logging.getLogger(__name__)
 # RequestManager api and making pass through functions.  If anything, this creates more dependencies on the current
 # API and so I politely disagree with the aiohttp author.  We will ensure that a *specific* version of
 # aiohttp is referenced as a dependency by this package in order to prevent surprises.
-warnings.filterwarnings(action='ignore', category=DeprecationWarning,
-                        message="Inheritance class ClientSession from ClientSession is discouraged")
+warnings.filterwarnings(
+    action='ignore',
+    category=DeprecationWarning,
+    message="Inheritance class ClientSession from ClientSession is discouraged"
+)
 
 
 class ClientSession(aiohttp.ClientSession):
@@ -29,7 +32,8 @@ class ClientSession(aiohttp.ClientSession):
         super().__init__(*args, **kwargs)
 
         self.pac = pypac.get_pac()
-        self.resolver = pypac.resolver.ProxyResolver(self.pac) if self.pac else None
+        self.resolver = pypac.resolver.ProxyResolver(
+            self.pac) if self.pac else None
         logger.debug(f'pypac proxy detection result: {self.resolver}')
 
         self.proxy_auths = {}
@@ -38,7 +42,8 @@ class ClientSession(aiohttp.ClientSession):
     async def _request(self, method, url, *args, **kwargs):
         if self.resolver:
             proxies = self.resolver.get_proxy_for_requests(url)
-            proxy = proxies.get('http') if url.startswith('http:') else proxies.get('https')
+            proxy = proxies.get('http') if url.startswith(
+                'http:') else proxies.get('https')
             logger.debug(f'proxy for {url}: {proxy}')
             kwargs['proxy'] = proxy
             if proxy in self.proxy_auths:
@@ -57,10 +62,13 @@ class ClientSession(aiohttp.ClientSession):
                     async with self.proxy_auth_lock:
                         # after locking, check that another thread didn't do it
                         if proxy not in self.proxy_auths:
-                            logger.debug("Proxy 407 error occurred - starting proxy NTLM auth negotiation")
+                            logger.debug(
+                                "Proxy 407 error occurred - starting proxy NTLM auth negotiation"
+                            )
                             import aiohttp_proxy_aware.sspi_auth
-                            self.proxy_auths[proxy] = await aiohttp_proxy_aware.sspi_auth.get_proxy_auth_header_sspi(
-                                self, proxy)
+                            self.proxy_auths[
+                                proxy] = await aiohttp_proxy_aware.sspi_auth.get_proxy_auth_header_sspi(
+                                    self, proxy)
 
                 # try again
                 kwargs['proxy_headers'] = self.proxy_auths[proxy]
